@@ -1,0 +1,17 @@
+name: cafa5
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+  - nvidia
+  - milagraph
+  - pyg
+dependencies:
+  - python
+  - numpy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - pytorch=2.0.0
+  - pytorch-cuda=11.8
+  - torchdrug
