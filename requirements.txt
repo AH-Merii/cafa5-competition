@@ -1,0 +1,13 @@
+numpy
+pandas
+scikit-learn
+h5py
+tqdm
+flake8
+black
+torch-scatter
+torch-cluster
+torchdrug
+-f https://download.pytorch.org/whl/torch/
+torch==2.0.0+cu118
+-f https://data.pyg.org/whl/torch-2.0.0+cu118.html
