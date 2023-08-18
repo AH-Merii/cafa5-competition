@@ -1,5 +1,6 @@
 from pathlib import Path
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
+from torchdrug.data import DataLoader
 import pickle
 from tqdm.auto import tqdm
 from torchdrug.data import Protein
@@ -31,7 +32,7 @@ def get_path_df(data_dir):
 def pickle_protein(protein, path):
     path.parent.mkdir(exist_ok=True)
     with open(f"{path}.pkl", "wb") as file:
-        pickle.dump(protein, file)
+        pickle.dump((protein, path.name), file)
 
 
 def log_error_to_file(error_message, log_file="errors.log"):
@@ -48,15 +49,18 @@ class PreProcessingDataset(Dataset):
 
     def __getitem__(self, idx):
         pdb_path = self.path_df.at[idx, "path"]
-        label = self.path_df.at[idx, "entry_id"]
+        id = self.path_df.at[idx, "entry_id"]
+        print(idx, id)
         dataset = self.path_df.at[idx, "set"]
         try:
             protein = Protein.from_pdb(pdb_path)
         except Exception as e:
-            error_message = f"Error processing entry {label} in dataset {dataset} at path {pdb_path}: {e}"
+            print(id)
+            error_message = f"Error processing entry {id} in dataset {dataset} at path {pdb_path}: {e}"
             log_error_to_file(error_message)
-            protein = None
-        return protein, label, dataset
+            protein = Protein(atom_type=[], bond_type=[], residue_type=[])
+        item = {"graph": protein, "id": id, "dataset": dataset}
+        return item
 
     def __len__(self):
         return len(self.path_df)
@@ -75,16 +79,13 @@ if __name__ == "__main__":
 
     preprocessing_dataset = PreProcessingDataset(path_df=sample_df)
 
-    for i, (protein, entry_id, dataset) in enumerate(
-        tqdm(preprocessing_dataset, colour="green")
-    ):
-        if protein:
-            pickle_protein(protein, PROCESSED_DATA_DIR / dataset / entry_id)
+    preprocessing_loader = DataLoader(
+        preprocessing_dataset, batch_size=10, num_workers=16
+    )
 
-        # This is less than ideal, we should be using a dataloader,
-        # dataloaders are designed to handle arrays, not torchdrug.proteins
-        # torchdrug.protein objects are graphs, so we need to find a different collate
-        # function for our dataloaders, thankfully torchdrug already has their own implementation
-        # of the dataloader class, the question now is how to save them to hdf5 files
-        if i == len(preprocessing_dataset) - 1:
-            break
+    for i, batch in enumerate(tqdm(preprocessing_loader, colour="green")):
+        print(batch)
+        for item in batch:
+            print(item)  # item["graph"], item["id"], item["dataset"]
+            # if protein:
+            #     pickle_protein(protein, PROCESSED_DATA_DIR / dataset / entry_id)
