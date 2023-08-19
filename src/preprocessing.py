@@ -7,12 +7,12 @@ from tqdm.auto import tqdm
 from torchdrug import transforms
 from torchdrug.layers import GraphConstruction, geometry
 import pandas as pd
-import re
 import warnings
 from rdkit import RDLogger
 import torch
 from torchdrug import data
 from collections.abc import Mapping, Sequence
+from utils import get_path_df, log_error_to_file
 
 
 RDLogger.DisableLog("rdApp.*")
@@ -69,62 +69,6 @@ def graph_collate(batch):
             print(item)
         # Reraise the exception to ensure it's caught upstream
         raise e
-
-
-def extract_pdb_info(s):
-    pattern = r"^(?P<database>[^-]+)-(?P<entry_id>[^-]+)-(?P<misc>.+)\.pdb$"
-    match = re.match(pattern, s)
-    if match:
-        return match.groupdict()
-    else:
-        return None
-
-
-def get_path_df(data_dir: Path, processed_dir: Path = None) -> pd.DataFrame:
-    """
-    Create a dataframe containing paths to the PDB files in the specified directory.
-
-    This function traverses through the `data_dir` to find PDB files and returns
-    a dataframe with details about each file. If `processed_dir` is provided,
-    the function will skip PDB files for which corresponding pickle files already
-    exist in the `processed_dir`.
-
-    Parameters:
-    - data_dir (Path): The directory containing datasets with PDB files.
-    - processed_dir (Path, optional): The directory containing processed pickle files.
-                                      If provided, PDB files with corresponding pickle
-                                      files in this directory will be skipped.
-
-    Returns:
-    - DataFrame: A pandas dataframe with columns ["database", "entry_id", "misc", "path", "set"],
-                 where "path" is the full path to the PDB file, and "set" is the dataset name.
-    """
-
-    path_list = []
-    for dataset in data_dir.iterdir():
-        if dataset.is_dir():
-            for file in dataset.iterdir():
-                d = extract_pdb_info(file.name)
-
-                # If processed_dir is provided, check for existing pickle files and skip if found
-                if processed_dir:
-                    pickle_path = (
-                        processed_dir / dataset.name / (d["entry_id"] + ".pkl")
-                    )
-                    if pickle_path.exists():
-                        continue
-
-                d["path"] = str(file)
-                d["set"] = dataset.name
-                path_list.append(d)
-
-    return pd.DataFrame(path_list)
-
-
-def log_error_to_file(error_message, log_file="errors.log"):
-    """Append error messages to a log file."""
-    with open(log_file, "a") as file:
-        file.write(error_message + "\n")
 
 
 class PreProcessingDataset(Dataset):
