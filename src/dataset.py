@@ -5,12 +5,17 @@ from torch.utils import data as torch_data
 import pandas as pd
 import pickle
 from torchdrug import utils
-from sklearn.model_selection import train_test_split
 
 
 class GeneOntology(Dataset):
     def __init__(
-        self, path_df, label_df, transform=None, subontology="BPO", split=(0.9, 0.05)
+        self,
+        path_df,
+        label_df,
+        transform=None,
+        subontology="BPO",
+        split=(0.9, 0.05),
+        sample=False,
     ):
         self.subontology = subontology
         # Filter Dataset by subontology
@@ -18,6 +23,13 @@ class GeneOntology(Dataset):
             drop=True
         )
         self.path_df = path_df[path_df[subontology] == 1].reset_index(drop=True)
+
+        is_sample = self.path_df["set"] == "sample"
+        if sample:
+            # only use the sample dataset
+            self.path_df = self.path_df[is_sample].reset_index(drop=True)
+        else:
+            self.path_df = self.path_df[~is_sample].reset_index(drop=True)
 
         # Get all go labels for subontology
         self.tasks = self.label_df["term"].unique()
@@ -127,28 +139,21 @@ if __name__ == "__main__":
     labeled_path_df = pd.read_csv("data/labeled_paths.csv")
     label_df = pd.read_csv("data/terms.tsv", sep="\t")
 
-    bp_go = GeneOntology(
-        path_df=labeled_path_df,
-        label_df=label_df,
-        subontology="BPO",
-    )
-    mf_go = GeneOntology(
-        path_df=labeled_path_df,
-        label_df=label_df,
-        subontology="MFO",
-    )
+    bp_go = GeneOntology(path_df=labeled_path_df, label_df=label_df, subontology="BPO")
+    mf_go = GeneOntology(path_df=labeled_path_df, label_df=label_df, subontology="MFO")
+
     cc_go = GeneOntology(
-        path_df=labeled_path_df,
-        label_df=label_df,
-        subontology="CCO",
+        path_df=labeled_path_df, label_df=label_df, subontology="CCO", sample=True
     )
 
-    train_mf, test_mf, valid_mf = mf_go.split()
+    train, test, valid = cc_go.split()
 
-    mfs = [train_mf, test_mf, valid_mf]
-    for mf in mfs:
-        attrs = [attr for attr in dir(mf[0]["graph"]) if not attr.startswith("_")]
-        print(attrs)
-        print(mf[0]["graph"].node_feature.shape)
-        print(mf[0]["graph"].edge_feature.shape)
-        print(len(mf))
+    sets = [train, test, valid]
+    for s in sets:
+        print(s[0]["graph"].node_feature.shape)
+        print(s[0]["graph"].edge_feature.shape)
+        print(len(s))
+
+    print()
+    print(cc_go[0])
+    print(len(cc_go))
