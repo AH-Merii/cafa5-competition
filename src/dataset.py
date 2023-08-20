@@ -15,7 +15,7 @@ class GeneOntology(Dataset):
         transform=None,
         subontology="BPO",
         split=(0.9, 0.05),
-        sample=False,
+        sample="train",
     ):
         self.subontology = subontology
         # Filter Dataset by subontology
@@ -24,12 +24,10 @@ class GeneOntology(Dataset):
         )
         self.path_df = path_df[path_df[subontology] == 1].reset_index(drop=True)
 
-        is_sample = self.path_df["set"] == "sample"
         if sample:
             # only use the sample dataset
-            self.path_df = self.path_df[is_sample].reset_index(drop=True)
-        else:
-            self.path_df = self.path_df[~is_sample].reset_index(drop=True)
+            mask = self.path_df["set"] == sample
+            self.path_df = self.path_df[mask].reset_index(drop=True)
 
         # Get all go labels for subontology
         self.tasks = self.label_df["term"].unique()
