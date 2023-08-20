@@ -125,11 +125,6 @@ def build_downstream_solver(cfg, dataset):
     model = models.GearNet(**cfg.models)
 
     task = WeightedMultipleBinaryClassification(
-        # weights_path=cfg.task.weights_path,
-        # num_mlp_layer=cfg.task.num_mlp_layer,
-        # task=cfg.task.task,
-        # criterion=cfg.task.criterion,
-        # metric=cfg.task.metric,
         model=model,
         **cfg.task,
         verbose=1,

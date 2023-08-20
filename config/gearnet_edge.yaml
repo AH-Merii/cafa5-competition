@@ -21,9 +21,11 @@ dataset:
   path_df: "data/labeled_paths.csv"
   label_df: "data/terms.tsv"
   subontology: "MFO"
+  sample: False
+  split: [0.9, 0.05]
 
 models:
-  input_dim: 22
+  input_dim: 21
   hidden_dims: [512, 512, 512, 512, 512, 512]
   batch_norm: True
   concat_hidden: True
@@ -51,12 +53,15 @@ scheduler:
 
 engine:
   gpus: [0]
-  batch_size: 2
+  batch_size: 1
   log_interval: 10
+  gradient_interval: 4
 
 model_checkpoint: {{ ckpt }}
 
 metric: f1_max
+
+verbose: True
 
 train:
   num_epoch: 10

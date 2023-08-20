@@ -4,7 +4,7 @@ import torch
 import math
 from torchdrug.tasks import MultipleBinaryClassification
 from dataset import GeneOntology
-import json
+from tqdm.auto import tqdm
 import utils as util
 import numpy as np
 import os
@@ -77,7 +77,13 @@ def train_and_validate(cfg, solver, scheduler):
     best_result = float("-inf")
     best_epoch = -1
 
-    for i in range(0, cfg.train.num_epoch, step):
+    training_loop = tqdm(
+        range(0, cfg.train.num_epoch, step),
+        desc="Processing",
+        disable=not cfg.verbose,
+        colour="green",
+    )
+    for i in training_loop:
         kwargs = cfg.train.copy()
         kwargs["num_epoch"] = min(step, cfg.train.num_epoch - i)
         solver.train(**kwargs)
@@ -128,55 +134,14 @@ if __name__ == "__main__":
     dataset = GeneOntology(
         path_df=pd.read_csv(cfg.dataset.path_df),
         label_df=pd.read_csv(cfg.dataset.label_df, sep="\t"),
-        subontology="MFO",
+        subontology=cfg.dataset.subontology,
+        sample=cfg.dataset.sample,
+        split=cfg.dataset.split,
     )
-
-    # pretrained_model = "data/pretrained_models/mc-gearnet-edge.pth"
 
     solver, scheduler = util.build_downstream_solver(cfg, dataset)
 
     train_and_validate(cfg, solver, scheduler)
     test(cfg, solver)
 
-    # gearnet_edge = models.GearNet(
-    #     input_dim=22,
-    #     hidden_dims=[512, 512, 512, 512, 512],
-    #     num_relation=7,
-    #     edge_input_dim=59,
-    #     num_angle_bin=8,
-    #     batch_norm=True,
-    #     concat_hidden=True,
-    #     short_cut=True,
-    #     readout="sum",
-    # )
-
-    # task = WeightedMultipleBinaryClassification(
-    #     weights_path="data/IA.txt",
-    #     model=gearnet_edge,
-    #     num_mlp_layer=3,
-    #     task=[_ for _ in range(len(mf_go.targets))],
-    #     criterion="bce",
-    #     metric=["auprc@micro", "f1_max"],
-    #     verbose=1,
-    # )
-
-    # optimizer = torch.optim.AdamW(task.parameters(), lr=1e-4, weight_decay=0)
-    # solver = core.Engine(
-    #     task,
-    #     train,
-    #     valid,
-    #     test,
-    #     optimizer,
-    #     gpus=[0],
-    #     batch_size=4,
-    #     num_worker=16,
-    #     log_interval=10,
-    # )
-
-    # solver.train(num_epoch=10)
-    # solver.evaluate("valid")
-
-    with open("data/finetuned_models/mf_gearnet.json", "w") as fout:
-        json.dump(solver.config_dict(), fout)
-
-    solver.save("data/finetuned_models/mf_gearnet.pth")
+    print("\033[92m\033[1mCongratulations, Model has completed training!\033[0m")
