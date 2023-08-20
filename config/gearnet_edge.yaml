@@ -1,4 +1,4 @@
-output_dir: ~/scratch/protein_output
+output_dir: data/finetuned_models
 
 preprocessor:
   graph_construction_model:
@@ -16,20 +16,25 @@ preprocessor:
         min_distance: 5
     edge_feature: gearnet
 
+dataset:
+  class: GeneOntology
+  path_df: "data/labeled_paths.csv"
+  label_df: "data/terms.tsv"
+  subontology: "MFO"
+
+models:
+  input_dim: 22
+  hidden_dims: [512, 512, 512, 512, 512, 512]
+  batch_norm: True
+  concat_hidden: True
+  short_cut: True
+  readout: 'sum'
+  num_relation: 7
+  edge_input_dim: 59
+  num_angle_bin: 8
+
 task:
-  class: WeightedMultipleBinaryClassification
   weights_path: data/IA.txt
-  model:
-    class: GearNet
-    input_dim: 21
-    hidden_dims: [512, 512, 512, 512, 512, 512]
-    batch_norm: True
-    concat_hidden: True
-    short_cut: True
-    readout: 'sum'
-    num_relation: 7
-    edge_input_dim: 59
-    num_angle_bin: 8
   criterion: bce
   num_mlp_layer: 3
   metric: ['auprc@micro', 'f1_max']

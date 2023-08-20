@@ -16,8 +16,10 @@ import torch
 from torch import distributed as dist
 from torch.optim import lr_scheduler
 
-from torchdrug import core, utils
+from torchdrug import core, utils, models
 from torchdrug.utils import comm
+
+from train import WeightedMultipleBinaryClassification
 
 
 logger = logging.getLogger(__file__)
@@ -92,13 +94,20 @@ def parse_args():
     parser.add_argument(
         "-s", "--seed", help="random seed for PyTorch", type=int, default=1024
     )
+    parser.add_argument(
+        "-o",
+        "--ont",
+        help="subontology to train model on ('MFO','BPO','CCO')",
+        type=str,
+        default="MFO",
+    )
 
     args, unparsed = parser.parse_known_args()
     # get dynamic arguments defined in the config file
     vars = detect_variables(args.config)
     parser = argparse.ArgumentParser()
     for var in vars:
-        parser.add_argument("--%s" % var, default="null")
+        parser.add_argument(f"--{var}", default="null")
     vars = parser.parse_known_args(unparsed)[0]
     vars = {k: utils.literal_eval(v) for k, v in vars._get_kwargs()}
 
@@ -109,16 +118,22 @@ def build_downstream_solver(cfg, dataset):
     train_set, valid_set, test_set = dataset.split()
     if comm.get_rank() == 0:
         logger.warning(dataset)
-        logger.warning(
-            "#train: %d, #valid: %d, #test: %d"
-            % (len(train_set), len(valid_set), len(test_set))
-        )
+        logger.warning(f"#train: {train_set}, #valid: {valid_set}, #test: {test_set}")
 
-    if cfg.task["class"] == "WeightedMultipleBinaryClassification":
-        cfg.task.task = [_ for _ in range(len(dataset.tasks))]
-    else:
-        cfg.task.task = dataset.tasks
-    task = core.Configurable.load_config_dict(cfg.task)
+    cfg.task.task = [_ for _ in range(len(dataset.targets))]
+
+    model = models.GearNet(**cfg.models)
+
+    task = WeightedMultipleBinaryClassification(
+        # weights_path=cfg.task.weights_path,
+        # num_mlp_layer=cfg.task.num_mlp_layer,
+        # task=cfg.task.task,
+        # criterion=cfg.task.criterion,
+        # metric=cfg.task.metric,
+        model=model,
+        **cfg.task,
+        verbose=1,
+    )
 
     cfg.optimizer.params = task.parameters()
     optimizer = core.Configurable.load_config_dict(cfg.optimizer)
@@ -147,7 +162,7 @@ def build_downstream_solver(cfg, dataset):
 
     if cfg.get("model_checkpoint") is not None:
         if comm.get_rank() == 0:
-            logger.warning("Load checkpoint from %s" % cfg.model_checkpoint)
+            logger.warning(f"Load checkpoint from {cfg.model_checkpoint}")
         cfg.model_checkpoint = os.path.expanduser(cfg.model_checkpoint)
         model_dict = torch.load(cfg.model_checkpoint, map_location=torch.device("cpu"))
         task.model.load_state_dict(model_dict)

@@ -1,10 +1,16 @@
-from torchdrug import models, core, layers
-from dataset import GeneOntology, split_dataset
+from torch.optim import lr_scheduler
 import pandas as pd
-from pathlib import Path
 import torch
+import math
 from torchdrug.tasks import MultipleBinaryClassification
+from dataset import GeneOntology
 import json
+import utils as util
+import numpy as np
+import os
+from torchdrug.utils import comm
+import random
+import pprint
 
 
 class WeightedMultipleBinaryClassification(MultipleBinaryClassification):
@@ -63,77 +69,112 @@ class WeightedMultipleBinaryClassification(MultipleBinaryClassification):
         self.register_buffer("weight", task_weights)
 
 
+def train_and_validate(cfg, solver, scheduler):
+    if cfg.train.num_epoch == 0:
+        return
+
+    step = math.ceil(cfg.train.num_epoch / 50)
+    best_result = float("-inf")
+    best_epoch = -1
+
+    for i in range(0, cfg.train.num_epoch, step):
+        kwargs = cfg.train.copy()
+        kwargs["num_epoch"] = min(step, cfg.train.num_epoch - i)
+        solver.train(**kwargs)
+        solver.save(f"model_epoch_{solver.epoch}.pth")
+        metric = solver.evaluate("valid")
+        solver.evaluate("test")
+        result = metric[cfg.metric]
+        if result > best_result:
+            best_result = result
+            best_epoch = solver.epoch
+        if isinstance(scheduler, lr_scheduler.ReduceLROnPlateau):
+            scheduler.step(result)
+
+    solver.load(f"model_epoch_{best_epoch}.pth")
+    return solver
+
+
+def test(cfg, solver):
+    solver.evaluate("valid")
+    return solver.evaluate("test")
+
+
 if __name__ == "__main__":
-    PROCESSED_DATA_DIR = Path("data/processed")
-    # path_df = get_path_df(data_dir=PROCESSED_DATA_DIR, processed=True)
+    args, vars = util.parse_args()
+    cfg = util.load_config(args.config, context=vars)
+    # working_dir = util.create_working_directory(cfg)
 
-    labeled_path_df = pd.read_csv("data/labeled_paths.csv")
-    label_df = pd.read_csv("data/terms.tsv", sep="\t")
-    # pretrained_model = "data/pretrained_models/mc-gearnet-edge.pth"
-    pretrained_model = "data/pretrained_models/attr_gearnet_edge.pth"
+    # set system seed value
+    seed = args.seed
+    torch.manual_seed(seed + comm.get_rank())
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
-    # bp_go = GeneOntology(
-    #     path_df=labeled_path_df,
-    #     label_df=label_df,
-    #     subontology="BPO",
-    # )
-    mf_go = GeneOntology(
-        path_df=labeled_path_df,
-        label_df=label_df,
+    # configure logger
+    logger = util.get_root_logger()
+    if comm.get_rank() == 0:
+        logger.warning(f"Config file: {args.config}")
+        logger.warning(pprint.pformat(cfg))
+
+    # build dataset
+    dataset = GeneOntology(
+        path_df=pd.read_csv(cfg.dataset.path_df),
+        label_df=pd.read_csv(cfg.dataset.label_df, sep="\t"),
         subontology="MFO",
     )
-    # cc_go = GeneOntology(
-    #     path_df=labeled_path_df,
-    #     label_df=label_df,
-    #     subontology="CCO",
+
+    # pretrained_model = "data/pretrained_models/mc-gearnet-edge.pth"
+
+    solver, scheduler = util.build_downstream_solver(cfg, dataset)
+
+    train_and_validate(cfg, solver, scheduler)
+    test(cfg, solver)
+
+    # gearnet_edge = models.GearNet(
+    #     input_dim=22,
+    #     hidden_dims=[512, 512, 512, 512, 512],
+    #     num_relation=7,
+    #     edge_input_dim=59,
+    #     num_angle_bin=8,
+    #     batch_norm=True,
+    #     concat_hidden=True,
+    #     short_cut=True,
+    #     readout="sum",
     # )
 
-    train, test, valid = split_dataset(mf_go)
+    # task = WeightedMultipleBinaryClassification(
+    #     weights_path="data/IA.txt",
+    #     model=gearnet_edge,
+    #     num_mlp_layer=3,
+    #     task=[_ for _ in range(len(mf_go.targets))],
+    #     criterion="bce",
+    #     metric=["auprc@micro", "f1_max"],
+    #     verbose=1,
+    # )
 
+    # optimizer = torch.optim.AdamW(task.parameters(), lr=1e-4, weight_decay=0)
+    # solver = core.Engine(
+    #     task,
+    #     train,
+    #     valid,
+    #     test,
+    #     optimizer,
+    #     gpus=[0],
+    #     batch_size=4,
+    #     num_worker=16,
+    #     log_interval=10,
+    # )
 
-    gearnet_edge = models.GearNet(
-        input_dim=70,
-        hidden_dims=[512, 512, 512],
-        num_relation=7,
-        edge_input_dim=40,
-        num_angle_bin=8,
-        batch_norm=True,
-        concat_hidden=True,
-        short_cut=True,
-        readout="sum",
-    )
-
-    graph_construction_model = layers.GraphConstruction(edge_feature="gearnet")
-
-    task = WeightedMultipleBinaryClassification(
-        weights_path="data/IA.txt",
-        model=gearnet_edge,
-        num_mlp_layer=3,
-        task=[_ for _ in range(len(mf_go.targets))],
-        criterion="bce",
-        metric=["auprc@micro", "f1_max"],
-        verbose=1,
-    )
-
-    optimizer = torch.optim.AdamW(task.parameters(), lr=1e-4, weight_decay=0)
-    solver = core.Engine(
-        task,
-        train,
-        valid,
-        test,
-        optimizer,
-        gpus=[0],
-        batch_size=4,
-        num_worker=16,
-        log_interval=10,
-    )
-
-    checkpoint = torch.load(pretrained_model)["model"]
-    checkpoint = {k: v for k, v in checkpoint.items() if not k.startswith("mlp")}
-    task.load_state_dict(checkpoint, strict=False)
-
-    solver.train(num_epoch=10)
-    solver.evaluate("valid")
+    # solver.train(num_epoch=10)
+    # solver.evaluate("valid")
 
     with open("data/finetuned_models/mf_gearnet.json", "w") as fout:
         json.dump(solver.config_dict(), fout)
