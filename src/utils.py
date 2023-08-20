@@ -13,7 +13,7 @@ def extract_pdb_info(s, processed=False):
     if processed:
         pattern = r"^(?P<EntryID>[^-]+)\.pkl$"
     else:
-        pattern = r"^(?P<database>[^-]+)-(?P<EntryId>[^-]+)-(?P<misc>.+)\.pdb$"
+        pattern = r"^(?P<database>[^-]+)-(?P<EntryID>[^-]+)-(?P<misc>.+)\.pdb$"
     match = re.match(pattern, s)
     if match:
         return match.groupdict()

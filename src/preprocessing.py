@@ -156,7 +156,7 @@ if __name__ == "__main__":
     RAW_DATA_DIR = Path("data/raw")
     PROCESSED_DATA_DIR = Path("data/processed")
 
-    df = get_path_df(data_dir=RAW_DATA_DIR, processed_dir=PROCESSED_DATA_DIR)
+    df = get_path_df(data_dir=RAW_DATA_DIR)
 
     df.to_csv(RAW_DATA_DIR / "pdb_paths.csv", index=False)
 
@@ -173,9 +173,9 @@ if __name__ == "__main__":
         path_df=df,
         transform=transform,
         pdb_dir=RAW_DATA_DIR,
-        atom_feature=["default", "position"],
-        bond_feature=None,
-        residue_feature=["default", "symbol"],
+        atom_feature=["pretrain"],
+        bond_feature=["pretrain"],
+        residue_feature=["default"],
     )
 
     # Batch Graph Transforms
@@ -186,6 +186,7 @@ if __name__ == "__main__":
             geometry.KNNEdge(k=10, min_distance=5),
             geometry.SequentialEdge(max_distance=2),
         ],
+        edge_feature="gearnet",
     )
 
     preprocessor = PreProcessor(

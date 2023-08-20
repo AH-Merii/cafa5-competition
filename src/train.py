@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import torch
 from torchdrug.tasks import MultipleBinaryClassification
+import json
 
 
 class WeightedMultipleBinaryClassification(MultipleBinaryClassification):
@@ -68,26 +69,27 @@ if __name__ == "__main__":
 
     labeled_path_df = pd.read_csv("data/labeled_paths.csv")
     label_df = pd.read_csv("data/terms.tsv", sep="\t")
+    # pretrained_model = "data/pretrained_models/mc-gearnet-edge.pth"
+    pretrained_model = "data/pretrained_models/attr_gearnet_edge.pth"
 
-    bp_go = GeneOntology(
-        path_df=labeled_path_df,
-        label_df=label_df,
-        subontology="BPO",
-    )
-    # mf_go = GeneOntology(
+    # bp_go = GeneOntology(
     #     path_df=labeled_path_df,
     #     label_df=label_df,
-    #     subontology="MFO",
+    #     subontology="BPO",
     # )
+    mf_go = GeneOntology(
+        path_df=labeled_path_df,
+        label_df=label_df,
+        subontology="MFO",
+    )
     # cc_go = GeneOntology(
     #     path_df=labeled_path_df,
     #     label_df=label_df,
     #     subontology="CCO",
     # )
 
-    bp_train, bp_test, bp_valid = split_dataset(bp_go)
+    train, test, valid = split_dataset(mf_go)
 
-    print(bp_train[0]["graph"])
 
     gearnet_edge = models.GearNet(
         input_dim=70,
@@ -106,24 +108,34 @@ if __name__ == "__main__":
     task = WeightedMultipleBinaryClassification(
         weights_path="data/IA.txt",
         model=gearnet_edge,
-        graph_construction_model=graph_construction_model,
         num_mlp_layer=3,
-        task=[_ for _ in range(len(bp_go.targets))],
+        task=[_ for _ in range(len(mf_go.targets))],
         criterion="bce",
         metric=["auprc@micro", "f1_max"],
         verbose=1,
     )
 
-    optimizer = torch.optim.Adam(task.parameters(), lr=1e-4)
+    optimizer = torch.optim.AdamW(task.parameters(), lr=1e-4, weight_decay=0)
     solver = core.Engine(
         task,
-        bp_train,
-        bp_valid,
-        bp_test,
+        train,
+        valid,
+        test,
         optimizer,
         gpus=[0],
-        batch_size=32,
+        batch_size=4,
         num_worker=16,
+        log_interval=10,
     )
-    solver.train(num_epoch=3)
+
+    checkpoint = torch.load(pretrained_model)["model"]
+    checkpoint = {k: v for k, v in checkpoint.items() if not k.startswith("mlp")}
+    task.load_state_dict(checkpoint, strict=False)
+
+    solver.train(num_epoch=10)
     solver.evaluate("valid")
+
+    with open("data/finetuned_models/mf_gearnet.json", "w") as fout:
+        json.dump(solver.config_dict(), fout)
+
+    solver.save("data/finetuned_models/mf_gearnet.pth")
