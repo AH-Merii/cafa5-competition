@@ -22,8 +22,8 @@ dataset:
   path_df: "data/labeled_paths.csv"
   label_df: "data/terms.tsv"
   subontology: "MFO"
-  sample: False
-  split: [0.9, 0.05]
+  sample: "train"
+  split: [0.8, 0.15]
 
 models:
   input_dim: 21
