@@ -87,7 +87,7 @@ def train_and_validate(cfg, solver, scheduler):
         kwargs = cfg.train.copy()
         kwargs["num_epoch"] = min(step, cfg.train.num_epoch - i)
         solver.train(**kwargs)
-        solver.save(f"model_epoch_{solver.epoch}.pth")
+        solver.save(f"{cfg.checkpoints_dir}model_epoch_{solver.epoch}.pth")
         metric = solver.evaluate("valid")
         solver.evaluate("test")
         result = metric[cfg.metric]
