@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import torch
 from pathlib import Path
+from torch.utils import data as torch_data
 import pandas as pd
 import pickle
 from torchdrug import utils
@@ -188,6 +189,15 @@ class GeneOntology(Dataset):
         )
 
         return tensor.to_dense()
+
+    def split(self):
+        offset = 0
+        splits = []
+        for num_sample in self.num_samples:
+            split = torch_data.Subset(self, range(offset, offset + num_sample))
+            splits.append(split)
+            offset += num_sample
+        return splits
 
 
 if __name__ == "__main__":
