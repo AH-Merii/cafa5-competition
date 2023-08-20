@@ -1,4 +1,5 @@
 output_dir: data/finetuned_models
+checkpoints_dir: data/finetuned_models/checkpoints
 
 preprocessor:
   graph_construction_model:
@@ -54,7 +55,7 @@ scheduler:
 engine:
   gpus: [0]
   batch_size: 1
-  log_interval: 10
+  log_interval: 500
   gradient_interval: 4
 
 model_checkpoint: {{ ckpt }}
@@ -64,4 +65,4 @@ metric: f1_max
 verbose: True
 
 train:
-  num_epoch: 10
+  num_epoch: 1
