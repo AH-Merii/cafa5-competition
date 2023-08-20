@@ -87,7 +87,7 @@ def train_and_validate(cfg, solver, scheduler):
         kwargs = cfg.train.copy()
         kwargs["num_epoch"] = min(step, cfg.train.num_epoch - i)
         solver.train(**kwargs)
-        solver.save(f"{cfg.checkpoints_dir}model_epoch_{solver.epoch}.pth")
+        solver.save(f"{cfg.checkpoints_dir}/model_epoch_{solver.epoch}.pth")
         metric = solver.evaluate("valid")
         solver.evaluate("test")
         result = metric[cfg.metric]
@@ -97,7 +97,7 @@ def train_and_validate(cfg, solver, scheduler):
         if isinstance(scheduler, lr_scheduler.ReduceLROnPlateau):
             scheduler.step(result)
 
-    solver.load(f"model_epoch_{best_epoch}.pth")
+    solver.load(f"{cfg.checkpoints_dir}/model_epoch_{best_epoch}.pth")
     return solver
 
 
