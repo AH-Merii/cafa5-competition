@@ -11,9 +11,9 @@ def log_error_to_file(error_message, log_file="errors.log"):
 
 def extract_pdb_info(s, processed=False):
     if processed:
-        pattern = r"^(?P<entry_id>[^-]+)\.pkl$"
+        pattern = r"^(?P<EntryID>[^-]+)\.pkl$"
     else:
-        pattern = r"^(?P<database>[^-]+)-(?P<entry_id>[^-]+)-(?P<misc>.+)\.pdb$"
+        pattern = r"^(?P<database>[^-]+)-(?P<EntryId>[^-]+)-(?P<misc>.+)\.pdb$"
     match = re.match(pattern, s)
     if match:
         return match.groupdict()
@@ -37,7 +37,7 @@ def get_path_df(data_dir: Path, processed_dir: Path = None, **kwargs) -> pd.Data
                                       files in this directory will be skipped.
 
     Returns:
-    - DataFrame: A pandas dataframe with columns ["database", "entry_id", "misc", "path", "set"],
+    - DataFrame: A pandas dataframe with columns ["database", "EntryID", "misc", "path", "set"],
                  where "path" is the full path to the PDB file, and "set" is the dataset name.
     """
 
@@ -49,9 +49,7 @@ def get_path_df(data_dir: Path, processed_dir: Path = None, **kwargs) -> pd.Data
 
                 # If processed_dir is provided, check for existing pickle files and skip if found
                 if processed_dir:
-                    pickle_path = (
-                        processed_dir / dataset.name / (d["entry_id"] + ".pkl")
-                    )
+                    pickle_path = processed_dir / dataset.name / (d["EntryID"] + ".pkl")
                     if pickle_path.exists():
                         continue
 

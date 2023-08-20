@@ -90,7 +90,7 @@ class PreProcessingDataset(Dataset):
 
     def __getitem__(self, idx):
         pdb_path = self.path_df.at[idx, "path"]
-        id = self.path_df.at[idx, "entry_id"]
+        id = self.path_df.at[idx, "EntryID"]
         dataset = self.path_df.at[idx, "set"]
         try:
             protein = Protein.from_pdb(
@@ -158,9 +158,9 @@ if __name__ == "__main__":
 
     df = get_path_df(data_dir=RAW_DATA_DIR, processed_dir=PROCESSED_DATA_DIR)
 
-    df.to_csv(RAW_DATA_DIR / "paths.csv", index=False)
+    df.to_csv(RAW_DATA_DIR / "pdb_paths.csv", index=False)
 
-    df = pd.read_csv(RAW_DATA_DIR / "paths.csv")
+    df = pd.read_csv(RAW_DATA_DIR / "pdb_paths.csv")
 
     df.reset_index(drop=True)
 
