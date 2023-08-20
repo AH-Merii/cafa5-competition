@@ -56,7 +56,7 @@ class GeneOntology(Dataset):
         path = self.path_df.at[idx, "path"]
         go_terms = self.grouped_terms.get(id, [])
         item = {
-            "graph": self.read_pickle(path)[0][0],
+            "graph": self.read_pickle(path),
             "targets": self.protein_labels_to_sparse_tensor(
                 go_terms_associated=go_terms, go_term_to_idx=self.go_term_to_idx
             ),
