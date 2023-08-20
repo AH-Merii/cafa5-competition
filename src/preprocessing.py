@@ -77,8 +77,8 @@ class PreProcessingDataset(Dataset):
         path_df,
         pdb_dir,
         transform=None,
-        atom_feature="default",
-        bond_feature="default",
+        atom_feature="pretrain",
+        bond_feature="pretrain",
         residue_feature="default",
     ):
         self.path_df = path_df.reset_index()
@@ -133,7 +133,7 @@ class PreProcessor:
     def pickle_item(self, protein, path):
         path.parent.mkdir(exist_ok=True)
         with open(f"{path}.pkl", "wb") as file:
-            pickle.dump((protein, path.name), file)
+            pickle.dump(protein, file)
 
     def process_data(self, graph_transform=False, graph_key="graph"):
         if self.verbose:
@@ -146,9 +146,7 @@ class PreProcessor:
             for protein, id, subset in zip(
                 batch["graph"], batch["id"], batch["dataset"]
             ):
-                self.pickle_item(
-                    (protein, id, subset), Path(self.output_dir) / subset / id
-                )
+                self.pickle_item(protein, Path(self.output_dir) / subset / id)
 
 
 if __name__ == "__main__":
@@ -173,9 +171,6 @@ if __name__ == "__main__":
         path_df=df,
         transform=transform,
         pdb_dir=RAW_DATA_DIR,
-        atom_feature=["pretrain"],
-        bond_feature=["pretrain"],
-        residue_feature=["default"],
     )
 
     # Batch Graph Transforms
