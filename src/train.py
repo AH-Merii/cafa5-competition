@@ -136,6 +136,7 @@ if __name__ == "__main__":
         subontology=cfg.dataset.subontology,
         sample=cfg.dataset.sample,
         split=cfg.dataset.split,
+        frac=cfg.dataset.frac,
     )
 
     solver, scheduler = util.build_downstream_solver(cfg, dataset)
