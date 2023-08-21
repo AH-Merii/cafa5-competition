@@ -1,5 +1,5 @@
 output_dir: data/finetuned_models
-checkpoints_dir: data/finetuned_models/checkpoints
+checkpoints_dir: data/finetuned_models/checkpoints/{{ ont }}
 
 preprocessor:
   graph_construction_model:
@@ -21,9 +21,10 @@ dataset:
   class: GeneOntology
   path_df: "data/labeled_paths.csv"
   label_df: "data/terms.tsv"
-  subontology: "MFO"
+  subontology: {{ ont }}
   sample: "train"
   split: [0.8, 0.15]
+  frac: {{ frac }}
 
 models:
   input_dim: 21
@@ -53,10 +54,10 @@ scheduler:
   patience: 5
 
 engine:
-  gpus: [0]
+  gpus: {{ gpus }}
   batch_size: 1
-  log_interval: 500
-  gradient_interval: 4
+  log_interval: 250
+  gradient_interval: 2
 
 model_checkpoint: {{ ckpt }}
 
@@ -65,4 +66,4 @@ metric: f1_max
 verbose: True
 
 train:
-  num_epoch: 1
+  num_epoch: 5

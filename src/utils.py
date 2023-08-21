@@ -94,13 +94,13 @@ def parse_args():
     parser.add_argument(
         "-s", "--seed", help="random seed for PyTorch", type=int, default=1024
     )
-    parser.add_argument(
-        "-o",
-        "--ont",
-        help="subontology to train model on ('MFO','BPO','CCO')",
-        type=str,
-        default="MFO",
-    )
+    # parser.add_argument(
+    #     "-o",
+    #     "--ont",
+    #     help="subontology to train model on ('MFO','BPO','CCO')",
+    #     type=str,
+    #     default="MFO",
+    # )
 
     args, unparsed = parser.parse_known_args()
     # get dynamic arguments defined in the config file
