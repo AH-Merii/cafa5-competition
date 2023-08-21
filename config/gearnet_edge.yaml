@@ -23,7 +23,7 @@ dataset:
   label_df: "data/terms.tsv"
   subontology: {{ ont }}
   sample: "train"
-  split: [0.8, 0.15]
+  split: [0.6, 0.2]
   frac: {{ frac }}
 
 models:
@@ -55,15 +55,17 @@ scheduler:
 
 engine:
   gpus: {{ gpus }}
-  batch_size: 1
+  batch_size: 2
   log_interval: 250
-  gradient_interval: 2
+  gradient_interval: 1
 
-model_checkpoint: {{ ckpt }}
+model_checkpoint: 'data/pretrained_models/mc_gearnet_edge.pth'
+
+checkpoint: {{ ckpt }}
 
 metric: f1_max
 
 verbose: True
 
 train:
-  num_epoch: 5
+  num_epoch: 10
