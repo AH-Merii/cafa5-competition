@@ -1,9 +1,10 @@
-import pickle
-from torch.utils import Dataset
-from torchdrug.data import DataLoader
-from torchdrug import utils, models
 import os
+import pickle
+
 import torch
+from torch.utils import Dataset
+from torchdrug import models, utils
+from torchdrug.data import DataLoader
 
 
 class GeneOntology(Dataset):

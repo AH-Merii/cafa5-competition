@@ -55,7 +55,7 @@ scheduler:
 
 engine:
   gpus: {{ gpus }}
-  batch_size: 2
+  batch_size: 1
   log_interval: 250
   gradient_interval: 1
 
@@ -68,4 +68,4 @@ metric: f1_max
 verbose: True
 
 train:
-  num_epoch: 10
+  num_epoch: 5

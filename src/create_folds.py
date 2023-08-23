@@ -1,6 +1,8 @@
-import pandas as pd
-from utils import get_path_df
 from pathlib import Path
+
+import pandas as pd
+
+from utils import get_path_df
 
 
 def label_path_df(path_df, label_df):

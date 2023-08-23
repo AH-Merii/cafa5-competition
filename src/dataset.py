@@ -1,9 +1,10 @@
-from torch.utils.data import Dataset
-import torch
-from pathlib import Path
-from torch.utils import data as torch_data
-import pandas as pd
 import pickle
+from pathlib import Path
+
+import pandas as pd
+import torch
+from torch.utils import data as torch_data
+from torch.utils.data import Dataset
 from torchdrug import utils
 
 
@@ -31,7 +32,9 @@ class GeneOntology(Dataset):
             self.path_df = self.path_df[mask].reset_index(drop=True)
 
             if frac:
-                self.path_df = self.path_df.sample(frac=frac).reset_index(drop=True)
+                self.path_df = self.path_df.sample(
+                    frac=frac, random_state=777
+                ).reset_index(drop=True)
 
         # Get all go labels for subontology
         self.tasks = self.label_df["term"].unique()

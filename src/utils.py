@@ -1,26 +1,22 @@
-import pandas as pd
-from pathlib import Path
-import re
-
-import os
-import time
-import logging
 import argparse
+import logging
+import os
+import re
+import time
+from pathlib import Path
 
-import yaml
-import jinja2
-from jinja2 import meta
 import easydict
-
+import jinja2
+import pandas as pd
 import torch
+import yaml
+from jinja2 import meta
 from torch import distributed as dist
 from torch.optim import lr_scheduler
-
-from torchdrug import core, utils, models
+from torchdrug import core, models, utils
 from torchdrug.utils import comm
 
 from train import WeightedMultipleBinaryClassification
-
 
 logger = logging.getLogger(__file__)
 

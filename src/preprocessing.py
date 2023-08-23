@@ -1,19 +1,19 @@
-from pathlib import Path
-import time
-from torch.utils.data import Dataset
-from torchdrug.data import DataLoader, Protein
 import pickle
-from tqdm.auto import tqdm
-from torchdrug import transforms
-from torchdrug.layers import GraphConstruction, geometry
-import pandas as pd
+import time
 import warnings
-from rdkit import RDLogger
-import torch
-from torchdrug import data
 from collections.abc import Mapping, Sequence
-from utils import get_path_df, log_error_to_file
+from pathlib import Path
 
+import pandas as pd
+import torch
+from rdkit import RDLogger
+from torch.utils.data import Dataset
+from torchdrug import data, transforms
+from torchdrug.data import DataLoader, Protein
+from torchdrug.layers import GraphConstruction, geometry
+from tqdm.auto import tqdm
+
+from utils import get_path_df, log_error_to_file
 
 RDLogger.DisableLog("rdApp.*")
 warnings.filterwarnings("ignore")

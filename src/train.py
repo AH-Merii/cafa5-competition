@@ -1,16 +1,18 @@
-from torch.optim import lr_scheduler
+import math
+import os
+import pprint
+import random
+
+import numpy as np
 import pandas as pd
 import torch
-import math
+from torch.optim import lr_scheduler
 from torchdrug.tasks import MultipleBinaryClassification
-from dataset import GeneOntology
-from tqdm.auto import tqdm
-import utils as util
-import numpy as np
-import os
 from torchdrug.utils import comm
-import random
-import pprint
+from tqdm.auto import tqdm
+
+import utils as util
+from dataset import GeneOntology
 
 
 class WeightedMultipleBinaryClassification(MultipleBinaryClassification):
